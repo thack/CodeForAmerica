@@ -13,61 +13,62 @@ namespace API.Controllers
     public class WateringController : ApiController
     {
         // GET api/values
-        public IEnumerable<string> Get()
+        public IEnumerable<bool> Get()
         {
+            // default values if not defined by query string
             NameValueCollection queryParams = HttpUtility.ParseQueryString(Request.RequestUri.Query);
-            NameValueCollection postVars = new NameValueCollection();
-
             string url = queryParams["url"] ?? "http://www.snwa.com/apps/watering_group/get_wg_data.cfml";
             string address = queryParams["address"] ?? "317 S 6th Street";
             string city = queryParams["city"] ?? "Las Vegas";
             string zip = queryParams["zip"] ?? "89101";
 
-            postVars["WGstreetaddress"] = HttpUtility.UrlEncode(address);
-            postVars["WGcity"] = HttpUtility.UrlEncode(city);
-            postVars["WGzip"] = HttpUtility.UrlEncode(zip);
+            NameValueCollection postVars = new NameValueCollection();
+            postVars["WGstreetaddress"] = address;
+            postVars["WGcity"] = city;
+            postVars["WGzip"] = zip;
 
+            // send http request with post variables
             WebClient client = new WebClient();
             byte[] bytes = client.UploadValues(url, postVars);
             string page = Encoding.UTF8.GetString(bytes);
 
             try
             {
+                // look for content containing watering days
                 int startIndex = page.IndexOf("<h4>Watering Days");
                 int endIndex = page.IndexOf("<h4>Water Provider");
                 page = page.Substring(startIndex, endIndex - startIndex);
             }
             catch
             {
-                return new string[] { "false", "false", "false", "true", "false", "false", "false" };
+                // mobile client doesn't have logic to deal with error conditions, return default
+                return new bool[] { false, false, false, true, false, false, false };
             }
 
-            //string[] days = new string[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-            string[] days = new string[] { "true", "true", "true", "true", "true", "true", "true" };
+            bool[] days = new bool[] { false, false, false, false, false, false, false };
 
-            string falseValue = "false";
-            if (!page.Contains("Sun"))
-                days[0] = falseValue;
-            if (!page.Contains("Mon"))
-                days[1] = falseValue;
-            if (!page.Contains("Tue"))
-                days[2] = falseValue;
-            if (!page.Contains("Wed"))
-                days[3] = falseValue;
-            if (!page.Contains("Thu"))
-                days[4] = falseValue;
-            if (!page.Contains("Fri"))
-                days[5] = falseValue;
-            if (!page.Contains("Sat"))
-                days[6] = falseValue;
+            if (page.Contains("Sun"))
+                days[0] = true;
+            if (page.Contains("Mon"))
+                days[1] = true;
+            if (page.Contains("Tue"))
+                days[2] = true;
+            if (page.Contains("Wed"))
+                days[3] = true;
+            if (page.Contains("Thu"))
+                days[4] = true;
+            if (page.Contains("Fri"))
+                days[5] = true;
+            if (page.Contains("Sat"))
+                days[6] = true;
 
             return days;
         }
 
         // GET api/values/5
-        public string Get(int id)
+        public bool Get(int id)
         {
-            return "value";
+            return false;
         }
 
         // POST api/values
